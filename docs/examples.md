@@ -106,3 +106,113 @@ Grandchild of top-level span:
 ```
 
 Note that in this example all events carry the same `TraceId=ddd5d76c4a74cf45a6791acf7c9aa71b` string (_may be represented as 16-byte GUID_) value inside the `Payload` property bag. This enables joining all spans together into one trace, if necessary. Populating `TraceId` on every event could be wasteful from the application instrumentation perspective, this function of assigning `TraceId` to individual events may be implemented in the ETW listener (side-car).
+
+Adding events on `Span` can be implemented as follows. Note we are adding:
+- `MyEvent1` and `MyEvent2` on outer (2nd-level from top) span
+- `MyEvent3` on inner (3rd-level from top) span
+
+```cpp
+  // Add first event
+  std::string eventName1 = "MyEvent1";
+  Properties event1 =
+  {
+    {"uint32Key", (uint32_t)1234},
+    {"uint64Key", (uint64_t)1234567890},
+    {"strKey", "someValue"}
+  };
+  outerSpan->AddEvent(eventName1, event1);
+  
+  // Add second event
+  std::string eventName2 = "MyEvent2";
+  Properties event2 =
+  {
+    {"uint32Key", (uint32_t)9876},
+    {"uint64Key", (uint64_t)987654321},
+    {"strKey", "anotherValue"}
+  };
+  outerSpan->AddEvent(eventName2, event2);
+
+  std::string eventName3= "MyEvent3";
+    Properties event3 =
+  {
+    /* Extra metadata that allows event to flow to A.I. pipeline */
+    {"metadata", "ai_event"},
+    {"uint32Key", (uint32_t)9876},
+    {"uint64Key", (uint64_t)987654321},
+    // {"int32array", {{-1,0,1,2,3}} },
+    {"tempString", getTemporaryValue() }
+  };
+  innerSpan->AddEvent(eventName3, event3);
+```
+
+Corresponding ETW event payload:
+
+**MyEvent1** : 
+
+```json
+{
+  "Timestamp": "2021-03-18T12:32:18.8952787-07:00",
+  "ProviderName": "OpenTelemetry-ETW-Provider",
+  "Id": 4,
+  "Message": null,
+  "ProcessId": 15036,
+  "Level": "Always",
+  "Keywords": "0x0000000000000000",
+  "EventName": "MyEvent1",
+  "ActivityID": null,
+  "RelatedActivityID": "6c13b971-6930-4f9d-0000-000000000000",
+  "Payload": {
+    "SpanId": "71b9136c30699d4f",
+    "strKey": "someValue",
+    "uint32Key": 1234,
+    "uint64Key": 1234567890
+  }
+}
+```
+
+**MyEvent2** :
+
+```json
+{
+  "Timestamp": "2021-03-18T12:32:19.8963662-07:00",
+  "ProviderName": "OpenTelemetry-ETW-Provider",
+  "Id": 5,
+  "Message": null,
+  "ProcessId": 15036,
+  "Level": "Always",
+  "Keywords": "0x0000000000000000",
+  "EventName": "MyEvent2",
+  "ActivityID": null,
+  "RelatedActivityID": "6c13b971-6930-4f9d-0000-000000000000",
+  "Payload": {
+    "SpanId": "71b9136c30699d4f",
+    "strKey": "anotherValue",
+    "uint32Key": 9876,
+    "uint64Key": 987654321
+  }
+}
+```
+
+**MyEvent3** :
+
+```json
+{
+  "Timestamp": "2021-03-18T12:32:21.8975498-07:00",
+  "ProviderName": "OpenTelemetry-ETW-Provider",
+  "Id": 6,
+  "Message": null,
+  "ProcessId": 15036,
+  "Level": "Always",
+  "Keywords": "0x0000000000000000",
+  "EventName": "MyEvent3",
+  "ActivityID": null,
+  "RelatedActivityID": "c1ffb283-0432-46aa-0000-000000000000",
+  "Payload": {
+    "SpanId": "83b2ffc13204aa46",
+    "metadata": "ai_event",
+    "tempString": "Value from Temporary std::string",
+    "uint32Key": 9876,
+    "uint64Key": 987654321
+  }
+}
+```
