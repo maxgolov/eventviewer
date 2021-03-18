@@ -15,8 +15,8 @@ ETW fields:
 | `Task` | [Defined here](https://docs.microsoft.com/en-us/windows/win32/wes/eventmanifestschema-tasktype-complextype) | - |
 | `Keywords` | [Defined here](https://docs.microsoft.com/en-us/windows/win32/wes/eventmanifestschema-keywordtype-complextype) | - |
 | `Level` | Definitions:<br>1 - WINEVENT_LEVEL_CRITICAL<br>2 - WINEVENT_LEVEL_ERROR<br>3 - WINEVENT_LEVEL_WARNING<br>4 - WINEVENT_LEVEL_INFO<br>5 - WINEVENT_LEVEL_VERBOSE<br>[Defined here](https://docs.microsoft.com/en-us/windows/win32/wes/eventmanifestschema-leveltype-complextype) | |
-| `ActivityId` | | |
-| `RelatedActivityId` | | |
+| `ActivityId` | A value that uniquely identifies the current activity. | |
+| `RelatedActivityId` | A value that uniquely identifies the parent activity to which this activity is related. | |
 
 ETW custom properties can logically be placed in strongly-typed `Payload` property bag, or string key-value map or dictionary.
 
@@ -67,6 +67,48 @@ ETW event represented in JSON notation:
 | *attributes*     | Payload                      |                | Payload     |
 | span (start)     | Opcode=1                     | number         | Envelope    |
 | span (end)       | Opcode=2                     | number         | Envelope    |
+
+## OpenTelemetry Correlation to ETW Correlation concepts
+
+A `SpanContext` represents the portion of a `Span` which must be serialized and
+propagated along side of a distributed context. `SpanContext`s are immutable.
+
+The OpenTelemetry `SpanContext` representation conforms to the [W3C TraceContext
+specification](https://www.w3.org/TR/trace-context/). It contains two
+identifiers - a `TraceId` and a `SpanId` - along with a set of common
+`TraceFlags` and system-specific `TraceState` values.
+
+`TraceId` A valid trace identifier is a 16-byte array with at least one
+non-zero byte.
+
+`SpanId` A valid span identifier is an 8-byte array with at least one non-zero
+byte.
+
+`TraceFlags` contain details about the trace. Unlike TraceState values,
+TraceFlags are present in all traces. The current version of the specification
+only supports a single flag called [sampled](https://www.w3.org/TR/trace-context/#sampled-flag).
+
+`TraceState` carries vendor-specific trace identification data, represented as a list
+of key-value pairs. TraceState allows multiple tracing
+systems to participate in the same trace. It is fully described in the [W3C Trace Context
+specification](https://www.w3.org/TR/trace-context/#tracestate-header)
+
+One `Tracer` is associated with exactly one `TraceId`.
+
+`Tracer` objects create `Span` objects using `StartSpan` API. Each `Span` associated
+with the `Tracer.TraceId` and has its own unique `SpanId`.
+
+When the first top-level `Span` object is created:
+- `ETW.RelatedActivityId` (GUID, 16 bytes) = parent tracer `Tracer.TraceId` (16 bytes)
+- `ETW.ActivityId` (GUID, 16 bytes) = `Span.SpanContext.SpanId`
+
+When a child `Span` object is created:
+- `ETW.RelatedActivityId` (GUID, 16 bytes) = parent `Span.SpanContext.SpanId` (8 bytes)
+- `ETW.ActivityId` (GUID, 16 bytes) = current `Span.SpanContext.SpanId` (8 bytes)
+
+Custom decoration could be optionally retained on each individual ETW event, to enable
+quick search of all `Span` objects associated with the current `Trace` by populating
+`ETW.Payload.TraceId` - custom attribute inside the `Payload` property bag.
 
 ### Attributes
 
