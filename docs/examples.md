@@ -104,3 +104,5 @@ Grandchild of top-level span:
   }
 }
 ```
+
+Note that in this example all events carry the same `TraceId=ddd5d76c4a74cf45a6791acf7c9aa71b` string (_may be represented as 16-byte GUID_) value inside the `Payload` property bag. This enables joining all spans together into one trace, if necessary. Populating `TraceId` on every event could be wasteful from the application instrumentation perspective, this function of assigning `TraceId` to individual events may be implemented in the ETW listener (side-car).
