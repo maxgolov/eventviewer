@@ -216,3 +216,97 @@ Corresponding ETW event payload:
   }
 }
 ```
+
+# Comparison with .NET Microsoft-Diagnostics-DiagnosticSource ETW provider - Event API
+
+ETW Provider `Microsoft-Diagnostics-DiagnosticSource` can be used to listen
+to events emitted using `DiagnosticSource`.
+
+C# Instrumentation:
+
+```csharp
+   DiagnosticSource ds = new DiagnosticListener("Diag1");
+   ds.Write("ev1", new { X = "str" }); 
+```
+
+ETW event contents:
+
+```json
+{
+  "Timestamp": "2021-03-18T12:57:28.0311936-07:00",
+  "ProviderName": "Microsoft-Diagnostics-DiagnosticSource",
+  "Id": 3,
+  "Message": null,
+  "ProcessId": 1544,
+  "Level": "Informational",
+  "Keywords": "0x0000F00000000002",
+  "EventName": "Event",
+  "ActivityID": null,
+  "RelatedActivityID": null,
+  "Payload": {
+    "SourceName": "Diag1",
+    "EventName": "ev1",
+    "Arguments": "[[{\"Key\":\"Key\",\"Value\":\"X\"},{\"Key\":\"Value\",\"Value\":\"str\"}]]"
+  }
+}
+```
+
+# Comparison with .NET Microsoft-Diagnostics-DiagnosticSource ETW Provider - Activity API
+
+`Activity` is conceptually similar to the concept of `Span`.
+
+C# Instrumentation using `DiagnosticSource.StartActivity` :
+
+```csharp
+   Activity activity = new Activity("MyOperation");
+   ds.StartActivity(activity, null);
+```
+
+**Activity Start** ETW event contents:
+
+```json
+{
+  "Timestamp": "2021-03-18T12:57:28.0386165-07:00",
+  "ProviderName": "Microsoft-Diagnostics-DiagnosticSource",
+  "Id": 3,
+  "Message": null,
+  "ProcessId": 1544,
+  "Level": "Informational",
+  "Keywords": "0x0000F00000000002",
+  "EventName": "Event",
+  "ActivityID": null,
+  "RelatedActivityID": null,
+  "Payload": {
+    "SourceName": "Diag1",
+    "EventName": "MyOperation.Start",
+    "Arguments": "[]"
+  }
+}
+```
+
+```csharp
+   ds.StopActivity(activity, null);
+```
+
+**Activity Stop**  ETW event contents:
+
+```json
+{
+  "Timestamp": "2021-03-18T12:57:28.0408691-07:00",
+  "ProviderName": "Microsoft-Diagnostics-DiagnosticSource",
+  "Id": 3,
+  "Message": null,
+  "ProcessId": 1544,
+  "Level": "Informational",
+  "Keywords": "0x0000F00000000002",
+  "EventName": "Event",
+  "ActivityID": null,
+  "RelatedActivityID": null,
+  "Payload": {
+    "SourceName": "Diag1",
+    "EventName": "MyOperation.Stop",
+    "Arguments": "[]"
+  }
+}
+
+However, C# API does not automatically track parent-child relationship. `ActivityId` and `RelatedActivityId` fields remain empty. Even if a child activity is explicitly linked to parent activity using `Activity.SetParentId` API, relationship remains unreflected in ETW events.
