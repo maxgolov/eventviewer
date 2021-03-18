@@ -56,17 +56,17 @@ ETW event represented in JSON notation:
 
 ## OpenTelemetry to ETW Mapping
 
-| OT Field Name    | ETW / EventSource Field Name | ETW Type       | Location    |
-|------------------|------------------------------|----------------|-------------|
-| trace_id         | TraceId                      | UTF-8 string   | Payload     |
-| span_id          | ActivityId                   | GUID           | Envelope    |
-| parent_span_id   | RelatedActivityId            | GUID           | Envelope    |
-| name             | EventName                    | UTF-8 string   | Envelope    |
-| kind             | SpanKind                     | number         | Envelope    |
-| status           | Status                       | UTF-8 string   | Envelope    |
-| *attributes*     | Payload                      |                | Payload     |
-| span (start)     | Opcode=1                     | number         | Envelope    |
-| span (end)       | Opcode=2                     | number         | Envelope    |
+| OT Field Name    | OT Type  | ETW / EventSource Field Name | ETW Type       | Location    |
+|------------------|----------|------------------------------|----------------|-------------|
+| trace_id         | 16 bytes | TraceId                      | UTF-8 string   | Payload     |
+| span_id          | 8 bytes  | ActivityId                   | GUID           | Envelope    |
+| parent_span_id   | 8 bytes  | RelatedActivityId            | GUID           | Envelope    |
+| name             |          | EventName                    | UTF-8 string   | Envelope    |
+| kind             |          | SpanKind                     | number         | Envelope    |
+| status           |          | Status                       | UTF-8 string   | Envelope    |
+| *attributes*     |          | Payload                      |                | Payload     |
+| span (start)     |          | Opcode=1                     | number         | Envelope    |
+| span (end)       |          | Opcode=2                     | number         | Envelope    |
 
 ## OpenTelemetry Correlation to ETW Correlation concepts
 
