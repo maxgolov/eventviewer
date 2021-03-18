@@ -284,6 +284,8 @@ C# Instrumentation using `DiagnosticSource.StartActivity` :
 }
 ```
 
+C# Instrumentation using `DiagnosticSource.StopActivity` :
+
 ```csharp
    ds.StopActivity(activity, null);
 ```
