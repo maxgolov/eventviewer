@@ -6,14 +6,6 @@
 
   // TODO: this code should fallback to MsgPack if TLD is not available
   auto tracer = tp.GetTracer(providerName, "TLD");
-
-  // Span attributes
-  Properties attribs =
-  {
-    {"attrib1", 1},
-    {"attrib2", 2}
-  };
-
   auto topSpan = tracer->StartSpan("MySpanTop");
   ```
   
@@ -47,6 +39,13 @@ Note that there are two options how `TraceId` may be expressed:
 Child spans can be associated with their parents as follows:
 
 ```cpp
+  // Span attributes
+  Properties attribs =
+  {
+    {"attrib1", 1},
+    {"attrib2", 2}
+  };
+
   auto outerSpan = tracer->StartSpan("MySpanL2", attribs);
   auto innerSpan = tracer->StartSpan("MySpanL3", attribs);
 ```
